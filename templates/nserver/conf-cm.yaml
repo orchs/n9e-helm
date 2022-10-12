@@ -44,6 +44,7 @@ data:
     ReadTimeout = 20
     WriteTimeout = 40
     IdleTimeout = 120
+    CategrafUser = "ccaatteeggrraaff9527kubectl12#$"
     [Heartbeat]
     IP = ""
     Interval = 1000
@@ -97,7 +98,7 @@ data:
     MaxIdleConns = 50
     TablePrefix = ""
     [Reader]
-    Url = "http://{{ template "nightingale.prometheus.host" . }}:{{ template "nightingale.prometheus.servicePort" . }}"
+    Url = "http://{{ template "nightingale.prometheus.host" . }}:8481/select/0/prometheus"
     BasicAuthUser = "{{ template "nightingale.prometheus.username" . }}"
     BasicAuthPass = "{{ template "nightingale.prometheus.rawPassword" . }}"
     Timeout = 30000
@@ -110,7 +111,7 @@ data:
     QueuePopSize = 2000
 
     [[Writers]]
-    Url = "http://{{ template "nightingale.prometheus.host" . }}:{{ template "nightingale.prometheus.servicePort" . }}/api/v1/write"
+    Url = "http://{{ template "nightingale.prometheus.host" . }}:8480/insert/0/prometheus/api/v1/write"
     BasicAuthUser = "{{ template "nightingale.prometheus.username" . }}"
     BasicAuthPass = "{{ template "nightingale.prometheus.rawPassword" . }}"
     Timeout = 10000

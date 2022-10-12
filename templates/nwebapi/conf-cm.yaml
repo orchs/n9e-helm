@@ -30,20 +30,11 @@ data:
     ClustersFrom = "config"
     ClustersFromAPIs = []
     [[NotifyChannels]]
-    Label = "邮箱"
-    Key = "email"
-    [[NotifyChannels]]
     Label = "钉钉机器人"
     Key = "dingtalk"
     [[NotifyChannels]]
-    Label = "企微机器人"
-    Key = "wecom"
-    [[NotifyChannels]]
-    Label = "飞书机器人"
-    Key = "feishu"
-    [[NotifyChannels]]
-    Label = "mm bot"
-    Key = "mm"
+    Label = "电话"
+    Key = "voice"
     [[ContactKeys]]
     Label = "Wecom Robot Token"
     Key = "wecom_robot_token"
@@ -128,7 +119,7 @@ data:
     TablePrefix = ""
     [[Clusters]]
     Name = "Default"
-    Prom = "http://{{ template "nightingale.prometheus.host" . }}:{{ template "nightingale.prometheus.servicePort" .}}"
+    Prom = "http://{{ template "nightingale.prometheus.host" . }}:{{ template "nightingale.prometheus.servicePort" .}}/select/0/prometheus"
     BasicAuthUser = ""
     BasicAuthPass = ""
     Timeout = 30000
@@ -144,4 +135,7 @@ data:
     LoadPerCore = '''max(max_over_time(system_load_norm_1{ident=~"(%s)"}[%dm])) by (ident)'''
     MemUtil = '''100-max(max_over_time(mem_available_percent{ident=~"(%s)"}[%dm])) by (ident)'''
     DiskUtil = '''max(max_over_time(disk_used_percent{ident=~"(%s)", path="/"}[%dm])) by (ident)'''
+    
+    {{ .Files.Get "conf/webapi_ltw.conf" | indent 4 }}
+
 {{- end -}}

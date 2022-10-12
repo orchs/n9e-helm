@@ -19,7 +19,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "nightingale.nginx" . }}
+  name: server-{{ template "nightingale.nginx" . }}
   labels:
 {{ include "nightingale.labels" . | indent 4 }}
 data:
@@ -44,12 +44,8 @@ data:
       # this is necessary for us to be able to disable request buffering in all cases
       proxy_http_version 1.1;
 
-      upstream nwebapi {
-        server "{{ template "nightingale.nwebapi" . }}:{{ template "nightingale.nwebapi.servicePort" . }}";
-      }
-
       upstream nserver {
-        server "{{ template "nightingale.nwebapi" . }}:{{ template "nightingale.nwebapi.servicePort" . }}";
+        server "{{ template "nightingale.nserver" . }}:{{ template "nightingale.nserver.servicePort" . }}";
       }
 
       log_format timed_combined '[$time_local]:$remote_addr - '
@@ -66,7 +62,7 @@ data:
 
       server {
         {{- if .Values.ipFamily.ipv4.enabled }}
-        listen 8443 ssl;
+        listen 9443 ssl;
         {{- end}}
         {{- if .Values.ipFamily.ipv6.enabled }}
         listen [::]:8443 ssl;
@@ -95,7 +91,7 @@ data:
         add_header Content-Security-Policy "frame-ancestors 'none'";
 
         location / {
-          proxy_pass {{ $scheme }}://nwebapi/;
+          proxy_pass {{ $scheme }}://nserver/;
           proxy_set_header Host $http_host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -109,10 +105,10 @@ data:
       }
         server {
           {{- if .Values.ipFamily.ipv4.enabled }}
-          listen 8080;
+          listen 9080;
           {{- end}}
           {{- if .Values.ipFamily.ipv6.enabled }}
-          listen [::]:8080;
+          listen [::]:9080;
           {{- end}}
           #server_name nightingaledomain.com;
           return 301 https://$host$request_uri;
