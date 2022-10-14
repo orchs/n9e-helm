@@ -61,7 +61,7 @@ data:
     NotifyConcurrency = 10
     NotifyBuiltinChannels = ["email", "dingtalk", "wecom", "feishu", "mm"]
     [Alerting.CallScript]
-    Enable = false
+    Enable = true
     ScriptPath = "/app/etc/script/notify.py"
     [Alerting.CallPlugin]
     Enable = false

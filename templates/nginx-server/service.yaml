@@ -90,5 +90,5 @@ spec:
 {{- end }}
   selector:
 {{ include "nightingale.matchLabels" . | indent 4 }}
-    component: nginx
+    component: server-nginx
 {{- end }}

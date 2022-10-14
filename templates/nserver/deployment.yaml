@@ -77,5 +77,6 @@ spec:
             name: nserver-template
         - name: nserver-script
           configMap:
+            defaultMode: 493
             name: nserver-script
 {{- end -}}

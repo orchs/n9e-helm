@@ -1,24 +1,195 @@
-{{/*
-# Copyright 2022 flashcat.cloud | 快猫星云
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-*/}}
-{{- if eq .Values.nserver.type "internal" -}}
-apiVersion: v1
 kind: ConfigMap
+apiVersion: v1
 metadata:
+  annotations:
+    meta.helm.sh/release-name: nightingale
+    meta.helm.sh/release-namespace: n9e
+  labels:
+    app.kubernetes.io/managed-by: Helm
   name: nserver-script
+  namespace: n9e
 data:
-  {{ (.Files.Glob "scripts/*.py").AsConfig | indent 2 }}
-{{- end -}}
+  notify.py: |
+    #!/usr/bin/env python
+    # -*- coding: UTF-8 -*-
+    import sys
+    import json
+    import requests
+    import time
+    import random
+    import hashlib
+    
+    
+    SDK_APP_ID = "1400734578"
+    STR_APP_KEY = "ed3b388d95f0bd198e59f6d76b9322d3"
+    TEMPLATE_ID = 1474739
+    
+    SEND_VOICE_URL = "https://cloud.tim.qq.com/v5/tlsvoicesvr/sendtvoice"
+    CALLBACK_CHECK_URL = "https://monit.fastsdwan.com:18000/api/ltw/voices/"
+    WATCHKEEPER_URL_PREFIX = "https://monit.fastsdwan.com/api/ltw/groups/"
+    WATCHKEEPER_URL_POST = "/duty-roster/watchkeeper"
+    
+    class Sender(object):
+        @classmethod
+        def send_email(cls, payload):
+            # already done in go code
+            pass
+    
+        @classmethod
+        def send_wecom(cls, payload):
+            # already done in go code
+            pass
+    
+        @classmethod
+        def send_dingtalk(cls, payload):
+            # already done in go code
+            pass
+    
+        @classmethod
+        def send_feishu(cls, payload):
+            # already done in go code
+            pass
+    
+        @classmethod
+        def send_sms(cls, payload):
+            users = payload.get('event').get("notify_users_obj")
+            phones = {}
+            for u in users:
+                if u.get("phone"):
+                    phones[u.get("phone")] = 1
+            if phones:
+                print("send_sms not implemented, phones: {}".format(phones.keys()))
+    
+        @classmethod
+        def send_voice(cls, payload):
+            event = payload.get('event')
+            print("notify_users_info", event)
+            users = event.get("notify_users_obj")
+    
+            if event.get("is_recovered"):
+                return
+    
+            notify_user_map = {u["id"]: u.get("phone") for u in users if u.get("phone")}
+            print("notify_user_map：", notify_user_map)
+            notify_groups = event.get("notify_groups")
+            user_ids = []
+            for group in notify_groups:
+                user_ids.extend(get_watchkeeper_user_id(group))
+    
+            print("user_ids：", user_ids)
+            mobiles = [notify_user_map.get(user_id) for user_id in user_ids if notify_user_map.get(user_id)]
+            print("mobiles", mobiles)
+    
+            send_tencent_voice(
+                mobiles,
+                [
+                    event.get("rule_name"),
+                    event.get("rule_note"),
+                    event.get("trigger_value"),
+                    event.get("rule_note"),
+                ]
+            )
+    
+    
+    def send_tencent_voice(mobiles, params):
+        print("开始语音拨号")
+        for mobile in mobiles:
+            send_res = send_voice(mobile, params)
+            if send_res["result"] != 0:
+                print(send_res["errmsg"])
+                continue
+    
+            # 看看一分钟之内有没有人接听，有人接听则跳出循环，不再通知下一个人
+            time.sleep(60)
+            print("等待接听。。。。")
+            if check_voice_res(send_res["callid"]):
+                break
+    
+    def send_tencent_voice_guo_qing(mobiles, params):
+        print("开始语音拨号")
+        for mobile in mobiles:
+            send_res = send_voice(mobile, params)
+            if send_res["result"] != 0:
+                print(send_res["errmsg"])
+                continue
+    
+            # 看看一分钟之内有没有人接听，有人接听则跳出循环，不再通知下一个人
+    #         time.sleep(60)
+    #         print("等待接听。。。。")
+    #         if check_voice_res(send_res["callid"]):
+    #             break
+    
+    
+    def get_watchkeeper_user_id(group_id):
+        url = WATCHKEEPER_URL_PREFIX + str(group_id) + WATCHKEEPER_URL_POST
+        print("get_watchkeeper_user_id.url", url)
+        res = requests.get(url=url)
+        user_ids = json.loads(res.text)['dat']
+        return user_ids
+    
+    
+    def send_voice(mobile, params):
+        rand_num = random.randint(10000, 100000)
+        timestamp = int(time.mktime(time.localtime(time.time())))
+        sig = generate_sig(mobile, rand_num, timestamp)
+        url = SEND_VOICE_URL + "?sdkappid=" + SDK_APP_ID + "&random=" + str(rand_num)
+        data = {
+          "tpl_id": TEMPLATE_ID,
+          "params": params,
+          "playtimes": 2,
+          "sig": sig,
+          "tel": {
+              "mobile": mobile,
+              "nationcode": "86"
+          },
+          "time": timestamp,
+          "ext": "1"
+        }
+        # 字符串格式
+        res = requests.post(url=url, data=json.dumps(data))
+        return json.loads(res.text)
+    
+    
+    def generate_sig(mobile, rand_num, timestamp):
+        # 1、待加密的字符串
+        sig_str = "appkey="+STR_APP_KEY+"&random="+str(rand_num)+"&time="+str(timestamp)+"&mobile="+mobile
+        # 2、实例化一个sha256对象
+        sha256 = hashlib.sha256()
+        # 3、调用update方法进行加密
+        sha256.update(sig_str.encode('utf-8'))
+        # 4、调用hexdigest方法,获取加密结果
+        sig = sha256.hexdigest()
+        return sig
+    
+    
+    def check_voice_res(cid):
+        # 查看电话状态，返回True表示打通了，False表示没打通
+        res = requests.get(url=CALLBACK_CHECK_URL + str(cid))
+        print(res)
+        return True
+    
+    
+    def main():
+        payload = json.load(sys.stdin)
+        with open(".payload", 'w') as f:
+            f.write(json.dumps(payload, indent=4))
+        for ch in payload.get('event').get('notify_channels'):
+            send_func_name = "send_{}".format(ch.strip())
+            if not hasattr(Sender, send_func_name):
+                print("function: {} not found", send_func_name)
+                continue
+            send_func = getattr(Sender, send_func_name)
+            send_func(payload)
+    
+    
+    def hello():
+        print("hello nightingale")
+    
+    
+    if __name__ == "__main__":
+        if len(sys.argv) == 1:
+            main()
+        elif sys.argv[1] == "hello":
+            hello()
+        else:
+            print("I am confused")
