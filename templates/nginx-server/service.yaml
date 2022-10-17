@@ -75,15 +75,17 @@ spec:
   loadBalancerSourceRanges:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if $loadBalancer.IP }}
-  loadBalancerIP: {{ $loadBalancer.IP }}
+  {{- if $loadBalancer.ServerIP }}
+  loadBalancerIP: {{ $loadBalancer.ServerIP }}
   {{- end }}
   ports:
     - name: http
+      nodePort: 39080
       port: {{ $loadBalancer.ports.httpPort }}
       targetPort: 9080
     {{- if .Values.expose.tls.enabled }}
     - name: https
+      nodePort: 39443
       port: {{ $loadBalancer.ports.httpsPort }}
       targetPort: 9443
     {{- end }}
