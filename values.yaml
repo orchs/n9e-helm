@@ -51,7 +51,9 @@ expose:
     ports:
       httpPort: 80
       httpsPort: 443
-    annotations: {}
+    serverAnnotations: {}
+    annotations:
+      service.kubernetes.io/tke-existed-lbid: 
     sourceRanges: []
 
 externalURL: http://hello.n9e.info

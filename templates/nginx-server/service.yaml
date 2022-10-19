@@ -65,7 +65,7 @@ spec:
   name: {{ $loadBalancer.serverName }}
   labels:
 {{ include "nightingale.labels" . | indent 4 }}
-{{- with $loadBalancer.annotations }}
+{{- with $loadBalancer.serverAnnotations }}
   annotations:
   {{- toYaml . | nindent 4 }}
 {{- end }}
