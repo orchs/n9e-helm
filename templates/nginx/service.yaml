@@ -80,12 +80,12 @@ spec:
   {{- end }}
   ports:
     - name: http
-      nodePort: 38080
+      nodePort: 30080
       port: {{ $loadBalancer.ports.httpPort }}
       targetPort: 8080
     {{- if .Values.expose.tls.enabled }}
     - name: https
-      nodePort: 38443
+      nodePort: 30443
       port: {{ $loadBalancer.ports.httpsPort }}
       targetPort: 8443
     {{- end }}
